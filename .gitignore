@@ -1,0 +1,10 @@
+/.env
+/vendor
+/composer.lock
+/index.php
+/routes
+/middleware
+/source/controller
+
+#phpmx-core
+/storage/certificate

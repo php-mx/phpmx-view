@@ -1,0 +1,14 @@
+{
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "": "source/"
+        },
+        "files": [
+            "helper/script/path.php"
+        ]
+    },
+    "require": {
+        "phpmx/server": "dev-main"
+    }
+}
