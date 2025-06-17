@@ -170,52 +170,54 @@ abstract class View
     /** Carrega o esquema de views */
     protected static function scheme(): array
     {
-        $scheme = [];
+        return cache('view-scheme', function () {
+            $scheme = [];
 
-        $viewPaths = Path::seekDirs('view');
-        $viewPaths = array_reverse($viewPaths);
+            $viewPaths = Path::seekDirs('view');
+            $viewPaths = array_reverse($viewPaths);
 
-        foreach ($viewPaths as $viewPath) {
-            $viewFiles = Dir::seekForFile($viewPath, true);
+            foreach ($viewPaths as $viewPath) {
+                $viewFiles = Dir::seekForFile($viewPath, true);
 
-            foreach ($viewFiles as $viewFile) {
-                if (isset(self::$RENDER_EX_CLASS[File::getEx($viewFile)])) {
-                    $path = Dir::getOnly($viewFile);
-                    $file = File::getOnly($viewFile);
-                    $name = File::getName($file);
-                    $import = path($viewPath, $viewFile);
+                foreach ($viewFiles as $viewFile) {
+                    if (isset(self::$RENDER_EX_CLASS[File::getEx($viewFile)])) {
+                        $path = Dir::getOnly($viewFile);
+                        $file = File::getOnly($viewFile);
+                        $name = File::getName($file);
+                        $import = path($viewPath, $viewFile);
 
-                    $scheme[$viewFile] = [
-                        'scope' => md5($viewFile),
-                        'origin' => $viewPath,
-                        'imports' => [$name => $import]
-                    ];
-
-                    if (str_starts_with($name, '_')) {
-                        $scheme[$path] = $scheme[$path] ?? [
-                            'scope' => md5($path),
+                        $scheme[$viewFile] = [
+                            'scope' => md5($viewFile),
                             'origin' => $viewPath,
-                            'imports' => []
+                            'imports' => [$name => $import]
                         ];
-                        $scheme[$path]['imports'][$name] = $import;
-                        $scheme[$path]['imports'] = array_filter(
-                            $scheme[$path]['imports'],
-                            fn($v, $k) => substr($k, 0, 1) === '_',
-                            ARRAY_FILTER_USE_BOTH
-                        );
-                    } else if (File::getEx($file) == 'php') {
-                        $alias = path($path, $name);
-                        if (!isset($scheme[$alias]) || $scheme[$alias]['origin'] != $viewPath)
-                            $scheme[$alias] =  [
-                                'scope' => md5($viewFile),
+
+                        if (str_starts_with($name, '_')) {
+                            $scheme[$path] = $scheme[$path] ?? [
+                                'scope' => md5($path),
                                 'origin' => $viewPath,
-                                'imports' => [$name => $import]
+                                'imports' => []
                             ];
+                            $scheme[$path]['imports'][$name] = $import;
+                            $scheme[$path]['imports'] = array_filter(
+                                $scheme[$path]['imports'],
+                                fn($v, $k) => substr($k, 0, 1) === '_',
+                                ARRAY_FILTER_USE_BOTH
+                            );
+                        } else if (File::getEx($file) == 'php') {
+                            $alias = path($path, $name);
+                            if (!isset($scheme[$alias]) || $scheme[$alias]['origin'] != $viewPath)
+                                $scheme[$alias] =  [
+                                    'scope' => md5($viewFile),
+                                    'origin' => $viewPath,
+                                    'imports' => [$name => $import]
+                                ];
+                        }
                     }
                 }
             }
-        }
 
-        return $scheme;
+            return $scheme;
+        });
     }
 }
