@@ -58,7 +58,7 @@ abstract class View
                             $__RETURN__ = require $__FILEPATH__;
                             $__OUTPUT__ = ob_get_clean();
 
-                            if (is_stringable($__RETURN__))
+                            if (is_stringable($__RETURN__) && !is_numeric($__RETURN__))
                                 $__OUTPUT__ = $__RETURN__;
 
                             return [$__OUTPUT__, $__DATA];
