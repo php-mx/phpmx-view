@@ -1,4 +1,13 @@
 {
+    "name": "phpmx/view",
+    "description": "Renderizador da camada de visualização do PHPMX",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "André Ricardo",
+            "email": "contatoadmx@gmail.com"
+        }
+    ],
     "minimum-stability": "dev",
     "autoload": {
         "psr-4": {
