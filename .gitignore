@@ -5,6 +5,7 @@
 /routes
 /middleware
 /source/controller
+/view
 
 #phpmx-core
 /storage/certificate
