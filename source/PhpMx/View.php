@@ -33,6 +33,32 @@ abstract class View
     {
         $content = '';
 
+        $parentFile = self::__currentGet('importing_file');
+
+        if ($parentFile) {
+            if (substr($ref, 0, 4) == '.../') {
+                $path = Dir::getOnly($parentFile);
+                $path = explode("/", $path);
+                array_pop($path);
+                array_pop($path);
+                $path = path(...$path);
+                $ref = path($path, substr($ref, 4));
+            }
+
+            if (substr($ref, 0, 3) == '../') {
+                $path = Dir::getOnly($parentFile);
+                $path = explode("/", $path);
+                array_pop($path);
+                $path = path(...$path);
+                $ref = path($path, substr($ref, 3));
+            }
+
+            if (substr($ref, 0, 2) == './') {
+                $path = Dir::getOnly($parentFile);
+                $ref = path($path, substr($ref, 2));
+            }
+        }
+
         $ref = trim($ref, '/');
 
         self::$SCHEME = self::$SCHEME ?? self::scheme();
