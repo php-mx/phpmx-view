@@ -23,6 +23,8 @@ abstract class ViewRenderJs extends ViewRender
 
         $content = self::applyPrepare($content);
 
+        $content = preg_replace(array("/\s+\n/", "/\n\s+/"), array("\n", "\n"), $content);
+
         if (count(self::__currentGet('imports')) > 1 || (count(self::$CURRENT) > 1 && !self::parentType('js')))
             $content = "<script>\n$content\n</script>";
 
