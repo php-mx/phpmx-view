@@ -5,10 +5,35 @@ if (!function_exists('minifyJs')) {
     /** Formata JS mantendo quebras de linha */
     function minifyJs(string $js): string
     {
+        $preserved = [];
+
+        $js = preg_replace_callback('/`(?:\\\\`|[^`])*`/s', function ($m) use (&$preserved) {
+            $key = '@@JS_TEMPLATE_' . count($preserved) . '@@';
+            $preserved[$key] = $m[0];
+            return $key;
+        }, $js);
+
+        $js = preg_replace_callback("/'(?:\\\\'|[^'])*'/s", function ($m) use (&$preserved) {
+            $key = '@@JS_SINGLE_' . count($preserved) . '@@';
+            $preserved[$key] = $m[0];
+            return $key;
+        }, $js);
+
+        $js = preg_replace_callback('/"(?:\\\\"|[^"])*"/s', function ($m) use (&$preserved) {
+            $key = '@@JS_DOUBLE_' . count($preserved) . '@@';
+            $preserved[$key] = $m[0];
+            return $key;
+        }, $js);
+
         $js = preg_replace('!/\*.*?\*/!s', '', $js);
         $js = preg_replace('/\s*\/\/[^\n\r]*/', '', $js);
+
         $js = preg_replace('/[ \t]+/', ' ', $js);
         $js = preg_replace('/^\s+/m', '', $js);
+
+        $js = strtr($js, $preserved);
+        $js = strtr($js, $preserved);
+        $js = strtr($js, $preserved);
 
         return $js;
     }
