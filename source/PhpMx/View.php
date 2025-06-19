@@ -36,21 +36,22 @@ abstract class View
         $parentFile = self::__currentGet('importing_file');
 
         if ($parentFile) {
+            $path = explode('view/', $parentFile);
+            array_shift($path);
+            $path = implode('view/', $path);
+            $path = Dir::getOnly($path);
             if (str_starts_with($ref, '.../')) {
-                $path = Dir::getOnly(substr($parentFile, 5));
                 $path = explode("/", $path);
                 array_pop($path);
                 array_pop($path);
                 $path = path(...$path);
                 $ref = path($path, substr($ref, 4));
             } elseif (str_starts_with($ref, '../')) {
-                $path = Dir::getOnly(substr($parentFile, 5));
                 $path = explode("/", $path);
                 array_pop($path);
                 $path = path(...$path);
                 $ref = path($path, substr($ref, 3));
             } elseif (str_starts_with($ref, './')) {
-                $path = Dir::getOnly(substr($parentFile, 5));
                 $ref = path($path, substr($ref, 2));
             }
         }
