@@ -25,7 +25,7 @@ abstract class ViewRenderCss extends ViewRender
 
         $content = self::applyPrepare($content);
 
-        $content = preg_replace(array("/\s+\n/", "/\n\s+/"), array("\n", "\n"), $content);
+        $content = minifyCss($content);
 
         if (count(self::__currentGet('imports')) > 1 || (count(self::$CURRENT) > 1 && !self::parentType('css')))
             $content = "<style>\n$content\n</style>";

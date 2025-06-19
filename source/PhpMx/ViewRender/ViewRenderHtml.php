@@ -13,6 +13,11 @@ abstract class ViewRenderHtml extends ViewRender
     protected static function renderizeAction(string $content, array $params = []): string
     {
         $content = str_replace(array_keys(self::$PREPARE_REPLACE), array_values(self::$PREPARE_REPLACE), $content);
-        return self::applyPrepare($content);
+
+        $content = self::applyPrepare($content);
+
+        $content = minifyHtml($content);
+
+        return $content;
     }
 }
