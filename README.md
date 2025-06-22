@@ -55,8 +55,6 @@ return View::render('_page/home', ['usuario' => $usuario]);
 
 ## Documentação
 
-- Consulte o [README do PHPMX Core](../phpmx-core/README.md) para detalhes sobre os diretórios `helper`, `source`, `storage` e `terminal`.
-
 - **Helper**
 
   - [function](./.doc/helper/function.md)
