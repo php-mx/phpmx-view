@@ -9,6 +9,8 @@ use PhpMx\ViewRender\ViewRenderJs;
 
 abstract class View
 {
+    protected static int $SCOPE = 0;
+
     protected static ?array $SCHEME = null;
 
     protected static array $CURRENT = [];
@@ -18,6 +20,7 @@ abstract class View
     protected static array $MEDIA_STYLE = [];
 
     static array $RENDER_EX_CLASS = [
+        'php' => ViewRenderHtml::class,
         'html' => ViewRenderHtml::class,
         'css' => ViewRenderCss::class,
         'js' => ViewRenderJs::class,
@@ -26,34 +29,9 @@ abstract class View
     /** Renderiza uma view e retorna seu conteúdo em forma de string */
     static function render(string $ref, string|array $data = [], ...$params): string
     {
-        $content = '';
-
-        $parentFile = self::__currentGet('importing_file');
-
-        if ($parentFile) {
-            $path = explode('view/', $parentFile);
-            array_shift($path);
-            $path = implode('view/', $path);
-            $path = Dir::getOnly($path);
-            if (str_starts_with($ref, '.../')) {
-                $path = explode("/", $path);
-                array_pop($path);
-                array_pop($path);
-                $path = path(...$path);
-                $ref = path($path, substr($ref, 4));
-            } elseif (str_starts_with($ref, '../')) {
-                $path = explode("/", $path);
-                array_pop($path);
-                $path = path(...$path);
-                $ref = path($path, substr($ref, 3));
-            } elseif (str_starts_with($ref, './')) {
-                $ref = path($path, substr($ref, 2));
-            }
-        }
-
-        $ref = trim($ref, '/');
-
         self::$SCHEME = self::$SCHEME ?? self::scheme();
+        $ref = self::resolveViewRef($ref);
+        $content = '';
 
         $importOnly = null;
 
@@ -64,55 +42,39 @@ abstract class View
             }
         }
 
-
         $scheme = self::$SCHEME[$ref] ?? false;
 
-        if ($scheme && self::__currentOpen($scheme, $data)) {
+        if ($scheme && self::__currentOpen($scheme, $data, $importOnly)) {
 
             if (isset($params['scope'])) self::__currentSet('scope', $params['scope']);
 
             foreach (self::__currentGet('imports') as $file) {
-                if (!$importOnly || $importOnly == File::getEx($file)) {
-                    $parentFile = self::__currentGet('importing_file');
-                    $parentType = self::__currentGet('importing_type');
+                $parentFile = self::__currentGet('importing_file');
 
-                    self::__currentSet('importing_file', $file);
-                    self::__currentSet('importing_type', File::getEx($file));
+                self::__currentSet('importing_file', $file);
+                self::__currentSet('type', self::__currentGet('type') ?? File::getEx($file));
 
-                    if (File::getEx($file) == 'php') {
-                        list($contentFile, $data, $type) = (
-                            function ($__FILEPATH__, $__DATA, $__TYPE) {
-                                foreach (array_keys($__DATA) as $__KEY__)
-                                    if (!is_numeric($__KEY__))
-                                        $$__KEY__ = $__DATA[$__KEY__];
-
-                                ob_start();
-                                $__RETURN__ = require $__FILEPATH__;
-                                $__OUTPUT__ = ob_get_clean();
-
-                                if (is_stringable($__RETURN__) && !is_numeric($__RETURN__))
-                                    $__OUTPUT__ = $__RETURN__;
-
-                                return [$__OUTPUT__, $__DATA, $__TYPE];
-                            }
-                        )($file, self::__currentGet('data'), 'html');
-
-                        self::__currentSet('importing_type', $type);
-                        self::__currentSet('data', $data);
-                    } else {
-                        $contentFile = Import::content($file);
-                    }
-
-                    $contentFile = self::renderize($contentFile, $params);
-
-                    self::__currentSet('importing_file', $parentFile);
-                    self::__currentSet('importing_type', $parentType);
-
-                    $content .= $contentFile;
+                if (File::getEx($file) == 'php') {
+                    list($contentFile, $data) = self::importViewFilePhp($file, self::__currentGet('data'));
+                    self::__currentSet('data', $data);
+                } else {
+                    $contentFile = Import::content($file);
                 }
+
+                $contentFile = self::renderize($contentFile, $params);
+
+                self::__currentSet('importing_file', $parentFile);
+
+                $content .= $contentFile;
             }
+
+            if (count(self::$CURRENT) == 1)
+                $content = self::format($content) ?? '';
+
             self::__currentClose();
         }
+
+        self::$SCOPE++;
 
         return $content;
     }
@@ -136,6 +98,21 @@ abstract class View
         self::$PREPARE[$tag] = $action;
     }
 
+    /** Formata o conteúdo final da view */
+    protected static function format(string $content): ?string
+    {
+        $type = File::getEx(self::__currentGet('type') ?? '');
+
+        $class = self::$RENDER_EX_CLASS[$type];
+
+        if (!$class) return null;
+        if (!class_exists($class)) return null;
+        if ($class == ViewRender::class) return null;
+        if (!is_extend($class, ViewRender::class)) return null;
+
+        return $class::format($content);
+    }
+
     /** Aplica as regras de renderização da view atual */
     protected static function renderize(string $content, array $params = []): ?string
     {
@@ -143,30 +120,36 @@ abstract class View
 
         $content = str_replace('__scope', "_$__scope", $content);
 
-        $renderizeClass = self::$RENDER_EX_CLASS[self::__currentGet('importing_type')];
+        $type = File::getEx(self::__currentGet('importing_file') ?? '');
+        $class = self::$RENDER_EX_CLASS[$type];
 
-        if (
-            !$renderizeClass
-            || !class_exists($renderizeClass)
-            || ($renderizeClass != ViewRender::class && !is_extend($renderizeClass, ViewRender::class))
-        )
-            return null;
+        if (!$class) return null;
+        if (!class_exists($class)) return null;
+        if ($class == ViewRender::class) return null;
+        if (!is_extend($class, ViewRender::class)) return null;
 
-        return $renderizeClass::renderizeAction($content, $params);
+        return $class::renderizeAction($content, $params);
     }
 
     /** Inicializa uma view */
-    protected static function __currentOpen(array $scheme, array $data = [])
+    protected static function __currentOpen(array $scheme, array $data = [], ?string $importOnly = null)
     {
-        if (isset(self::$CURRENT[$scheme['scope']])) return false;
+        $scope = Code::on([self::$SCOPE, $scheme['scope']]);
+
+        if (isset(self::$CURRENT[$scope])) return false;
 
         $current = [];
-        $current['key'] = $scheme['scope'];
-        $current['scope'] = $scheme['scope'];
+        $current['scope'] = $scope;
         $current['imports'] = $scheme['imports'];
         $current['data'] = [...self::__currentGet('data') ?? [], ...$data];
 
-        self::$CURRENT[$scheme['scope']] = $current;
+        if ($importOnly) {
+            $current['imports'] = array_filter($current['imports'], fn($v) => File::getEx($v) == $importOnly);
+            if (!count($current['imports']))
+                return false;
+        }
+
+        self::$CURRENT[$scope] = $current;
 
         return true;
     }
@@ -174,8 +157,8 @@ abstract class View
     /** Finaliza a view atual */
     protected static function __currentClose()
     {
-        $key = self::__currentGet('key');
-        if ($key) unset(self::$CURRENT[$key]);
+        $scope = self::__currentGet('scope');
+        if ($scope) unset(self::$CURRENT[$scope]);
     }
 
     /** Retorna uma variavel da view atual */
@@ -190,8 +173,8 @@ abstract class View
     /** Define uma variavel da view atual */
     protected static function __currentSet($var, $value)
     {
-        $key = self::__currentGet('key');
-        if ($key) self::$CURRENT[$key][$var] = $value;
+        $scope = self::__currentGet('scope');
+        if ($scope) self::$CURRENT[$scope][$var] = $value;
     }
 
     /** Verifica se a view pai é de um dos tipos fornecidos  */
@@ -203,7 +186,11 @@ abstract class View
             return false;
 
         $parentKey = $parentKey[count($parentKey) - 2];
-        $parentType = self::$CURRENT[$parentKey]['importing_type'] ?? '';
+
+        if (!self::$CURRENT[$parentKey]['importing_file'])
+            return false;
+
+        $parentType = File::getEx(self::$CURRENT[$parentKey]['importing_file']);
 
         return in_array($parentType, $types);
     }
@@ -237,6 +224,7 @@ abstract class View
                 $viewFiles = Dir::seekForFile($viewPath, true);
 
                 foreach ($viewFiles as $viewFile) {
+
                     if (isset(self::$RENDER_EX_CLASS[File::getEx($viewFile)])) {
                         $path = Dir::getOnly($viewFile);
                         $file = File::getOnly($viewFile);
@@ -249,23 +237,73 @@ abstract class View
                             $scheme[$alias]  = [
                                 'scope' => md5($alias),
                                 'origin' => $viewPath,
-                                'imports' => []
+                                'imports' => [
+                                    'php' => null,
+                                    'html' => null,
+                                ]
                             ];
                         }
 
-                        if ($ex == 'php') {
-                            array_unshift($scheme[$alias]['imports'], $import);
-                        } else {
-                            $scheme[$alias]['imports'][] = $import;
-                        }
+                        $scheme[$alias]['imports'][$ex] = $import;
                     }
                 }
 
-                foreach ($scheme as &$item)
+                foreach ($scheme as &$item) {
+                    $item['imports'] = array_filter($item['imports']);
+                    $item['imports'] = array_values($item['imports']);
                     unset($item['origin']);
+                }
             }
 
             return $scheme;
         });
+    }
+
+    /** Resolve a referencia de uma view */
+    protected static function resolveViewRef($ref): string
+    {
+        $parentFile = self::__currentGet('importing_file');
+
+        if ($parentFile) {
+            $path = explode('view/', $parentFile);
+            array_shift($path);
+            $path = implode('view/', $path);
+            $path = Dir::getOnly($path);
+            if (str_starts_with($ref, '.../')) {
+                $path = explode("/", $path);
+                array_pop($path);
+                array_pop($path);
+                $path = path(...$path);
+                $ref = path($path, substr($ref, 4));
+            } elseif (str_starts_with($ref, '../')) {
+                $path = explode("/", $path);
+                array_pop($path);
+                $path = path(...$path);
+                $ref = path($path, substr($ref, 3));
+            } elseif (str_starts_with($ref, './')) {
+                $ref = path($path, substr($ref, 2));
+            }
+        }
+
+        $ref = trim($ref, '/');
+
+        return $ref;
+    }
+
+    /** Realiza a importação do conteúdo de uma view PHP */
+    protected static function importViewFilePhp($__FILEPATH__, $__DATA): array
+    {
+        foreach (array_keys($__DATA) as $__KEY__)
+            if (!is_numeric($__KEY__))
+                $$__KEY__ = $__DATA[$__KEY__];
+
+        ob_start();
+        $__RETURN__ = require $__FILEPATH__;
+        $__OUTPUT__ = ob_get_clean();
+
+        if (is_stringable($__RETURN__) && !is_numeric($__RETURN__))
+            $__OUTPUT__ = $__RETURN__;
+
+        return [$__OUTPUT__, $__DATA];
     }
 }

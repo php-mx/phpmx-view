@@ -15,21 +15,32 @@ abstract class ViewRenderCss extends ViewRender
     ];
 
     /** Aplica ações extras ao renderizar uma view */
-    protected static function renderizeAction(string $content, array $params = []): string
+    protected static function renderizeAction(string $content): string
     {
         $content = str_replace(array_keys(self::$PREPARE_REPLACE), array_values(self::$PREPARE_REPLACE), $content);
 
-        $hash = Code::on($content, self::__currentGet('data'));
-        if (!IS_TERMINAL && isset(self::$IMPORTED_HASH[$hash])) return '';
+        $hash = Code::on([$content, self::__currentGet('data'), self::$SCOPE]);
+
+        if (!IS_TERMINAL && isset(self::$IMPORTED_HASH[$hash]))
+            return '';
+
         self::$IMPORTED_HASH[$hash] = true;
 
         $content = self::applyPrepare($content);
-        $content = self::applyMediaStyle($content);
-
-        $content = minifyCss($content);
+        $content = trim($content);
 
         if (count(self::__currentGet('imports')) > 1 || (count(self::$CURRENT) > 1 && !self::parentType('css')))
             $content = "<style>\n$content\n</style>";
+
+        return $content;
+    }
+
+    /** Formata um conteúdo CSS mantendo quebras de linha */
+    protected static function format(string $content): string
+    {
+        $content = preg_replace('!/\*.*?\*/!s', '', $content);
+        $content = preg_replace('/[ \t]+/', ' ', $content);
+        $content = preg_replace('/^\s+/m', '', $content);
 
         return $content;
     }
