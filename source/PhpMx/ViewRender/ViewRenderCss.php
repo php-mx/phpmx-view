@@ -24,6 +24,7 @@ abstract class ViewRenderCss extends ViewRender
         self::$IMPORTED_HASH[$hash] = true;
 
         $content = self::applyPrepare($content);
+        $content = self::applyMediaStyle($content);
 
         $content = minifyCss($content);
 
