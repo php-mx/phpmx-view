@@ -6,4 +6,4 @@ View::mediaStyle('tablet', 'screen and (min-width: 700px)');
 View::mediaStyle('desktop', 'screen and (min-width: 1200px)');
 View::mediaStyle('print', 'print');
 
-View::prepare('VIEW', fn($ref, ...$params) => View::render($ref, [], ...$params));
+View::globalPrepare('VIEW', fn($ref, ...$params) => View::render($ref, [], ...$params));

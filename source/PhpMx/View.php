@@ -2,7 +2,6 @@
 
 namespace PhpMx;
 
-use PhpMx\ViewRender\ViewRender;
 use PhpMx\ViewRender\ViewRenderCss;
 use PhpMx\ViewRender\ViewRenderHtml;
 use PhpMx\ViewRender\ViewRenderJs;
@@ -93,7 +92,7 @@ abstract class View
     }
 
     /** Define uma tag de prepare disponivel em todas as views */
-    static function prepare($tag, $action): void
+    static function globalPrepare($tag, $action): void
     {
         self::$PREPARE[$tag] = $action;
     }
@@ -107,8 +106,6 @@ abstract class View
 
         if (!$class) return null;
         if (!class_exists($class)) return null;
-        if ($class == ViewRender::class) return null;
-        if (!is_extend($class, ViewRender::class)) return null;
 
         return $class::format($content);
     }
@@ -125,8 +122,6 @@ abstract class View
 
         if (!$class) return null;
         if (!class_exists($class)) return null;
-        if ($class == ViewRender::class) return null;
-        if (!is_extend($class, ViewRender::class)) return null;
 
         return $class::renderizeAction($content, $params);
     }

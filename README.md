@@ -54,12 +54,12 @@ View::renderString(string $viewContent, string|array $data = []): string
 - `$viewContent`: Conteúdo da view em string.
 - `$data`: Dados para substituição.
 
-### prepare
+### globalPrepare
 
 Define um prepare global disponível em todas as views.
 
 ```php
-View::prepare($tag, $action): void
+View::globalPrepare($tag, $action): void
 ```
 
 - `$tag`: Nome do prepare.
