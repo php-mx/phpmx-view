@@ -32,11 +32,7 @@ abstract class ViewRenderHtml extends ViewRender
                 $type = strtolower($matches[1]);
                 $raw = $matches[3];
 
-                $formatted = $type === 'script'
-                    ? ViewRenderJs::format($raw)
-                    : ViewRenderCss::format($raw);
-
-                $preserved[$key] = "<{$type}{$matches[2]}>{$formatted}</{$type}>";
+                $preserved[$key] = "<{$type}{$matches[2]}>{$raw}</{$type}>";
                 return $key;
             },
             $content
@@ -55,131 +51,112 @@ abstract class ViewRenderHtml extends ViewRender
 
     protected static function formatFragment(string $content): string
     {
-        $srcScripts = [];
-        $inlineScripts = [];
-        $styles = [];
+        $scriptExternal = '';
+        $script = '';
+        $style = '';
 
-        preg_match_all('/<script\b([^>]*)>(.*?)<\/script>/is', $content, $matches, PREG_SET_ORDER);
-        foreach ($matches as $match) {
-            $attrs = $match[1];
-            $body  = trim($match[2]);
-
-            if (stripos($attrs, 'src=') !== false) {
-                $srcScripts[] = "<script{$attrs}></script>";
-            } elseif ($body !== '') {
-                $inlineScripts[] = $body;
-            }
-
-            $content = str_replace($match[0], '', $content);
+        preg_match_all('/<script[^>]*src=["\']?([^"\']+)["\']?[^>]*><\/script>/is', $content, $matches);
+        foreach ($matches[0] as $tag) {
+            $scriptExternal .= "\n" . trim($tag);
+            $content = str_replace($tag, '', $content);
         }
 
-        preg_match_all('/<style\b[^>]*>(.*?)<\/style>/is', $content, $matches, PREG_SET_ORDER);
-        foreach ($matches as $match) {
-            $styles[] = trim($match[1]);
-            $content = str_replace($match[0], '', $content);
+        preg_match_all('/<script(?![^>]*src)[^>]*>(.*?)<\/script>/is', $content, $matches);
+        foreach ($matches[1] as $i => $inner) {
+            $script .= "\n" . trim($inner);
+            $content = str_replace($matches[0][$i], '', $content);
         }
 
-        $srcBlock = implode("\n", $srcScripts);
-        $styleBlock = empty($styles) ? '' : "<style>\n" . implode("\n", $styles) . "\n</style>";
-        $scriptBlock = empty($inlineScripts) ? '' : "<script>\n" . implode("\n", $inlineScripts) . "\n</script>";
+        preg_match_all('/<style[^>]*>(.*?)<\/style>/is', $content, $matches);
+        foreach ($matches[1] as $i => $inner) {
+            $style .= "\n" . trim($inner);
+            $content = str_replace($matches[0][$i], '', $content);
+        }
 
-        return implode("\n", array_filter([$srcBlock, $styleBlock, trim($content), $scriptBlock]));
+        $style = ViewRenderCss::format($style);
+        if (!empty($style)) $style = "<style>\n$style\n</style>";
+
+        $script = ViewRenderJs::format($script);
+        if (!empty($script)) $script = "<script>\n$script\n</script>";
+
+        return "$scriptExternal\n$style\n$content\n$script";
     }
 
     protected static function formatPage(string $content): string
     {
-        $doctype = '';
+        $scriptExternal = '';
+        $script = '';
+        $style = '';
         $before = '';
+        $after  = '';
+        $doctype = '';
         $html = '';
-        $after = '';
+        $htmlAttr = '';
+        $head = '';
+        $headAttr = '';
+        $body = '';
+        $bodyAttr = '';
 
-        if (preg_match('/(.*?)(<html\b.*?>.*?<\/html>)(.*)/is', $content, $matches)) {
-            $before = trim($matches[1]);
-            $before = preg_replace_callback('/<!DOCTYPE[^>]*?>/i', function ($m) use (&$doctype) {
-                $doctype = $doctype ?: $m[0];
-                return '';
-            }, $before);
-            $html = $matches[2];
-            $after = trim($matches[3]);
-        } else {
-            $html = $content;
+        preg_match_all('/<script[^>]*src=["\']?([^"\']+)["\']?[^>]*><\/script>/is', $content, $matches);
+        foreach ($matches[0] as $tag) {
+            $scriptExternal .= "\n" . trim($tag);
+            $content = str_replace($tag, '', $content);
         }
 
-        $extractTags = function (string &$source, string $tag, ?callable $filter = null): array {
-            $results = [];
-            preg_match_all("/<{$tag}[^>]*>.*?<\/{$tag}>/is", $source, $matches);
-            foreach ($matches[0] as $block) {
-                if ($filter === null || $filter($block)) {
-                    $results[] = $block;
-                    $source = str_replace($block, '', $source);
-                }
-            }
-            return $results;
-        };
-
-        $extraHead = [];
-        $extraBodyStart = [];
-        $extraBodyEnd = [];
-
-        $extraHead = array_merge(
-            $extraHead,
-            $extractTags($before, 'script', fn($tag) => stripos($tag, 'src=') !== false || trim(strip_tags($tag)) === ''),
-            $extractTags($before, 'style')
-        );
-        if (trim($before) !== '') {
-            $extraBodyStart[] = trim($before);
+        preg_match_all('/<script(?![^>]*src)[^>]*>(.*?)<\/script>/is', $content, $matches);
+        foreach ($matches[1] as $i => $inner) {
+            $script .= "\n" . trim($inner);
+            $content = str_replace($matches[0][$i], '', $content);
         }
 
-        $extraHead = array_merge(
-            $extraHead,
-            $extractTags($after, 'script', fn($tag) => stripos($tag, 'src=') !== false || trim(strip_tags($tag)) === ''),
-            $extractTags($after, 'style')
-        );
-        if (trim($after) !== '') {
-            $extraBodyEnd[] = trim($after);
+        preg_match_all('/<style[^>]*>(.*?)<\/style>/is', $content, $matches);
+        foreach ($matches[1] as $i => $inner) {
+            $style .= "\n" . trim($inner);
+            $content = str_replace($matches[0][$i], '', $content);
         }
 
-        preg_match('/<head[^>]*>(.*?)<\/head>/is', $html, $headMatch);
-        $headInner = $headMatch[1] ?? '';
-        $html = str_replace($headMatch[0], '[#head]', $html);
+        $style = ViewRenderCss::format($style);
+        if (!empty($style)) $style = "<style>\n$style\n</style>";
 
-        $scriptsExternal = $extractTags($headInner, 'script', fn($tag) => stripos($tag, 'src=') !== false || trim(strip_tags($tag)) === '');
-        $scriptsInline = $extractTags($headInner, 'script', fn($tag) => stripos($tag, 'src=') === false && trim(strip_tags($tag)) !== '');
-        $styles = $extractTags($headInner, 'style');
+        $script = ViewRenderJs::format($script);
+        if (!empty($script)) $script = "<script>\n$script\n</script>";
 
-        $head = [];
-        if ($headInner) {
-            $head[] = trim($headInner);
-        }
-        if (!empty($styles)) {
-            $head[] = "<style>\n" . implode("\n", array_map('trim', array_map('strip_tags', $styles))) . "\n</style>";
-        }
-        if (!empty($scriptsExternal)) {
-            $head[] = implode("\n", $scriptsExternal);
-        }
-        if (!empty($scriptsInline)) {
-            $code = implode("\n", array_map(function ($block) {
-                return trim(preg_replace('#</?script[^>]*>#is', '', $block));
-            }, $scriptsInline));
-            $head[] = "<script>\n$code\n</script>";
-        }
-        if (!empty($extraHead)) {
-            $head[] = implode("\n", $extraHead);
+        preg_match('/(.*?)(<html\b.*?>.*?<\/html>)(.*)/is', $content, $structure);
+        $before = $structure[1];
+        $content   = $structure[2];
+        $after  = $structure[3];
+
+        if (preg_match('/<!DOCTYPE[^>]*>/i', $before, $match)) {
+            $doctype = $match[0];
+            $before = str_replace($doctype, '', $before);
         }
 
-        $finalHead = "<head>\n" . implode("\n", array_filter($head)) . "\n</head>";
-        $html = str_replace('[#head]', $finalHead, $html);
+        if (preg_match('/<head([^>]*)>(.*?)<\/head>/is', $content, $match)) {
+            $headAttr = trim($match[1]);
+            $head = trim($match[2]);
+            $content = str_replace($match[0], '', $content);
+        }
 
-        $html = preg_replace_callback('/<body[^>]*>/', function ($m) use ($extraBodyStart) {
-            if (empty($extraBodyStart)) return $m[0];
-            return $m[0] . "\n" . implode("\n", $extraBodyStart);
-        }, $html);
+        if (preg_match('/<body([^>]*)>(.*?)<\/body>/is', $content, $match)) {
+            $bodyAttr = trim($match[1]);
+            $body = trim($match[2]);
+            $content = str_replace($match[0], '', $content);
+        }
 
-        $html = preg_replace_callback('/<\/body>/', function ($m) use ($extraBodyEnd) {
-            if (empty($extraBodyEnd)) return $m[0];
-            return implode("\n", $extraBodyEnd) . "\n" . $m[0];
-        }, $html);
+        if (preg_match('/<html([^>]*)>(.*?)<\/html>/is', $content, $match)) {
+            $htmlAttr = trim($match[1]);
+            $html = trim($match[2]);
+        }
 
-        return ($doctype ? "$doctype\n" : '') . $html;
+        $bodyAttr = $bodyAttr ? " $bodyAttr" : '';
+        $headAttr = $headAttr ? " $headAttr" : '';
+        $htmlAttr = $htmlAttr ? " $htmlAttr" : '';
+
+        $body = "<body$bodyAttr>\n$before\n$body\n$after\n</body>";
+        $head = "<head$headAttr>\n$head\n$scriptExternal\n$style\n$script</head>";
+        $html = "<html$htmlAttr>\n$head\n$body</html>";
+        $content = "$doctype\n$html";
+
+        return $content;
     }
 }
