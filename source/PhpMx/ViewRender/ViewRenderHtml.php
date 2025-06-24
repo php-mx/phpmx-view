@@ -2,7 +2,9 @@
 
 namespace PhpMx\ViewRender;
 
-abstract class ViewRenderHtml extends ViewRender
+use PhpMx\View;
+
+abstract class ViewRenderHtml extends View
 {
     protected static array $PREPARE_REPLACE = [
         '<!-- [#' => '[#',

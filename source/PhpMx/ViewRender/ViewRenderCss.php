@@ -3,8 +3,9 @@
 namespace PhpMx\ViewRender;
 
 use PhpMx\Code;
+use PhpMx\View;
 
-abstract class ViewRenderCss extends ViewRender
+abstract class ViewRenderCss extends View
 {
     protected static array $IMPORTED_HASH = [];
 
