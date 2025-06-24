@@ -15,18 +15,13 @@ abstract class View
 
     protected static array $PREPARE = [];
 
+    protected static array $MEDIA_STYLE = [];
+
     static array $RENDER_EX_CLASS = [
-        'php' => ViewRenderHtml::class,
         'html' => ViewRenderHtml::class,
         'css' => ViewRenderCss::class,
         'js' => ViewRenderJs::class,
     ];
-
-    /** Define uma tag de prepare disponivel em todas as views */
-    static function globalPrepare($tag, $action): void
-    {
-        self::$PREPARE[$tag] = $action;
-    }
 
     /** Renderiza uma view e retorna seu conteúdo em forma de string */
     static function render(string $ref, string|array $data = [], ...$params): string
@@ -60,6 +55,16 @@ abstract class View
 
         self::$SCHEME = self::$SCHEME ?? self::scheme();
 
+        $importOnly = null;
+
+        foreach (array_keys(self::$RENDER_EX_CLASS) as $ex) {
+            if (!$importOnly && str_ends_with($ref, $ex)) {
+                $importOnly = $ex;
+                $ref = substr($ref, 0, -strlen($ex) - 1);
+            }
+        }
+
+
         $scheme = self::$SCHEME[$ref] ?? false;
 
         if ($scheme && self::__currentOpen($scheme, $data)) {
@@ -67,38 +72,45 @@ abstract class View
             if (isset($params['scope'])) self::__currentSet('scope', $params['scope']);
 
             foreach (self::__currentGet('imports') as $file) {
-                $parentFile = self::__currentGet('importing_file');
-                self::__currentSet('importing_file', $file);
+                if (!$importOnly || $importOnly == File::getEx($file)) {
+                    $parentFile = self::__currentGet('importing_file');
+                    $parentType = self::__currentGet('importing_type');
 
-                if (File::getEx($file) == 'php') {
-                    list($contentFile, $data) = (
-                        function ($__FILEPATH__, $__DATA) {
-                            foreach (array_keys($__DATA) as $__KEY__)
-                                if (!is_numeric($__KEY__))
-                                    $$__KEY__ = $__DATA[$__KEY__];
+                    self::__currentSet('importing_file', $file);
+                    self::__currentSet('importing_type', File::getEx($file));
 
-                            ob_start();
-                            $__RETURN__ = require $__FILEPATH__;
-                            $__OUTPUT__ = ob_get_clean();
+                    if (File::getEx($file) == 'php') {
+                        list($contentFile, $data, $type) = (
+                            function ($__FILEPATH__, $__DATA, $__TYPE) {
+                                foreach (array_keys($__DATA) as $__KEY__)
+                                    if (!is_numeric($__KEY__))
+                                        $$__KEY__ = $__DATA[$__KEY__];
 
-                            if (is_stringable($__RETURN__) && !is_numeric($__RETURN__))
-                                $__OUTPUT__ = $__RETURN__;
+                                ob_start();
+                                $__RETURN__ = require $__FILEPATH__;
+                                $__OUTPUT__ = ob_get_clean();
 
-                            return [$__OUTPUT__, $__DATA];
-                        }
-                    )($file, self::__currentGet('data'));
-                    self::__currentSet('data', $data);
-                } else {
-                    $contentFile = Import::content($file);
+                                if (is_stringable($__RETURN__) && !is_numeric($__RETURN__))
+                                    $__OUTPUT__ = $__RETURN__;
+
+                                return [$__OUTPUT__, $__DATA, $__TYPE];
+                            }
+                        )($file, self::__currentGet('data'), 'html');
+
+                        self::__currentSet('importing_type', $type);
+                        self::__currentSet('data', $data);
+                    } else {
+                        $contentFile = Import::content($file);
+                    }
+
+                    $contentFile = self::renderize($contentFile, $params);
+
+                    self::__currentSet('importing_file', $parentFile);
+                    self::__currentSet('importing_type', $parentType);
+
+                    $content .= $contentFile;
                 }
-
-                $contentFile = self::renderize($contentFile, $params);
-
-                self::__currentSet('importing_file', $parentFile);
-
-                $content .= $contentFile;
             }
-
             self::__currentClose();
         }
 
@@ -112,16 +124,26 @@ abstract class View
         return prepare($viewContent, [...$data, ...self::$PREPARE]);
     }
 
+    /** Define media queries dinamicas para folhas de estilo */
+    static function mediaStyle($media, $queries): void
+    {
+        self::$MEDIA_STYLE[$media] = $queries;
+    }
+
+    /** Define uma tag de prepare disponivel em todas as views */
+    static function prepare($tag, $action): void
+    {
+        self::$PREPARE[$tag] = $action;
+    }
+
     /** Aplica as regras de renderização da view atual */
     protected static function renderize(string $content, array $params = []): ?string
     {
         $__scope = self::__currentGet('scope');
-        $__onescope = self::__currentGet('onescope');
 
         $content = str_replace('__scope', "_$__scope", $content);
-        $content = str_replace('__onescope', "_$__onescope", $content);
 
-        $renderizeClass = self::$RENDER_EX_CLASS[File::getEx(self::__currentGet('importing_file'))];
+        $renderizeClass = self::$RENDER_EX_CLASS[self::__currentGet('importing_type')];
 
         if (
             !$renderizeClass
@@ -141,8 +163,6 @@ abstract class View
         $current = [];
         $current['key'] = $scheme['scope'];
         $current['scope'] = $scheme['scope'];
-        $current['onescope'] = md5(uniqid());
-        $current['mode'] = count($scheme['imports']) > 1 ? 'path' : 'file';
         $current['imports'] = $scheme['imports'];
         $current['data'] = [...self::__currentGet('data') ?? [], ...$data];
 
@@ -178,8 +198,13 @@ abstract class View
     protected static function parentType(...$types): bool
     {
         $parentKey = array_keys(self::$CURRENT);
+
+        if (count($parentKey) < 2)
+            return false;
+
         $parentKey = $parentKey[count($parentKey) - 2];
-        $parentType = File::getEx(self::$CURRENT[$parentKey]['importing_file'] ?? '');
+        $parentType = self::$CURRENT[$parentKey]['importing_type'] ?? '';
+
         return in_array($parentType, $types);
     }
 
@@ -187,6 +212,15 @@ abstract class View
     protected static function applyPrepare($string)
     {
         $string = prepare($string, [...self::__currentGet('data'), ...self::$PREPARE]);
+        return $string;
+    }
+
+    /** Aplica os prepare de view em uma string */
+    protected static function applyMediaStyle($string)
+    {
+        foreach (self::$MEDIA_STYLE as $media => $value)
+            $string = str_replace("@media $media", "@media $value", $string);
+
         return $string;
     }
 
@@ -207,37 +241,28 @@ abstract class View
                         $path = Dir::getOnly($viewFile);
                         $file = File::getOnly($viewFile);
                         $name = File::getName($file);
+                        $ex = File::getEx($file);
+                        $alias = path($path, $name);
                         $import = path($viewPath, $viewFile);
 
-                        $scheme[$viewFile] = [
-                            'scope' => md5($viewFile),
-                            'origin' => $viewPath,
-                            'imports' => [$name => $import]
-                        ];
-
-                        if (str_starts_with($name, '_')) {
-                            $scheme[$path] = $scheme[$path] ?? [
-                                'scope' => md5($path),
+                        if (!isset($scheme[$alias]) || $scheme[$alias]['origin'] != $viewPath) {
+                            $scheme[$alias]  = [
+                                'scope' => md5($alias),
                                 'origin' => $viewPath,
                                 'imports' => []
                             ];
-                            $scheme[$path]['imports'][$name] = $import;
-                            $scheme[$path]['imports'] = array_filter(
-                                $scheme[$path]['imports'],
-                                fn($v, $k) => substr($k, 0, 1) === '_',
-                                ARRAY_FILTER_USE_BOTH
-                            );
-                        } else if (File::getEx($file) == 'php') {
-                            $alias = path($path, $name);
-                            if (!isset($scheme[$alias]) || $scheme[$alias]['origin'] != $viewPath)
-                                $scheme[$alias] =  [
-                                    'scope' => md5($viewFile),
-                                    'origin' => $viewPath,
-                                    'imports' => [$name => $import]
-                                ];
+                        }
+
+                        if ($ex == 'php') {
+                            array_unshift($scheme[$alias]['imports'], $import);
+                        } else {
+                            $scheme[$alias]['imports'][] = $import;
                         }
                     }
                 }
+
+                foreach ($scheme as &$item)
+                    unset($item['origin']);
             }
 
             return $scheme;
