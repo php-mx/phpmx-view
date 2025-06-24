@@ -35,20 +35,46 @@ Este pacote adiciona um item estrutural ao seu projeto:
 
 ### view
 
-Organize seus arquivos de visualização em subpastas como `_base`, `_component` e `_page` para facilitar a manutenção e reutilização.
+### Organização de Views
 
-Exemplo:
+Organize seus arquivos de visualização dentro do diretório `view/` com nomes claros. Cada arquivo com o mesmo nome-base será automaticamente agrupado como uma única view.
 
-```text
-/view/_base/layout.html
-/view/_component/button.html
-/view/_page/home.html
-```
+Exemplo de estrutura:
 
-Você pode renderizar um template em seu controller assim:
+/view/home.html
+/view/home.css
+/view/home.js
+
+Neste exemplo, a view `home` será composta automaticamente pelos três arquivos: `home.html`, `home.css` e `home.js`.
+
+Renderize-a no controller assim:
 
 ```php
-return View::render('_page/home', ['usuario' => $usuario]);
+return View::render('home'); // carrega HTML + CSS + JS
+```
+
+É possível importar partes específicas da view usando a extensão:
+
+```php
+View::render('home.css'); // carrega apenas o CSS
+View::render('home.js'); // carrega apenas o JS
+```
+
+---
+
+### Boas Práticas de Organização
+
+Para manter seu projeto limpo e modular, use subpastas com propósito claro:
+
+/view/base/layout.html
+/view/component/button.html
+/view/page/home.html
+
+Essas pastas são apenas organizacionais. O alias será resolvido pelo caminho completo:
+
+```php
+View::render('page/home'); // carrega todos os arquivos home.* dentro de /view/page
+View::render('component/button.js'); // carrega apenas o JS do botão
 ```
 
 ---
