@@ -13,7 +13,6 @@
             "": "source/"
         },
         "files": [
-            "helper/function/minify.php",
             "helper/script/path.php",
             "helper/script/view.php"
         ]
