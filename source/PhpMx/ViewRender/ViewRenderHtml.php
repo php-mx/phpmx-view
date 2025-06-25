@@ -159,6 +159,8 @@ abstract class ViewRenderHtml extends View
         $html = "<html$htmlAttr>\n$head\n$body</html>";
         $content = "$doctype\n$html";
 
+        $content = trim($content);
+
         return $content;
     }
 }

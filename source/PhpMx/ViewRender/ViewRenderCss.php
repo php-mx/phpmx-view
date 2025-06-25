@@ -41,10 +41,12 @@ abstract class ViewRenderCss extends View
         $content = self::applyMediaStyle($content);
 
         $content = preg_replace('!/\*.*?\*/!s', '', $content);
-        $content = preg_replace('/[ \t]+/', ' ', $content);
-        $content = preg_replace('/^\s+/m', '', $content);
 
         $content = self::unnesting($content);
+
+        $content = preg_replace('/[ \t]+/', ' ', $content);
+        $content = preg_replace('/^\s+/m', '', $content);
+        $content = trim($content);
 
         return $content;
     }

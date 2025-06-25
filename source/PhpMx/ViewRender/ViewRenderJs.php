@@ -66,6 +66,7 @@ abstract class ViewRenderJs extends View
         $content = strtr($content, $preserved);
         $content = strtr($content, $preserved);
         $content = strtr($content, $preserved);
+        $content = trim($content);
 
         return $content;
     }
