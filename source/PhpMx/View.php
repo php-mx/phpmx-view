@@ -26,7 +26,7 @@ abstract class View
     ];
 
     /** Renderiza uma view e retorna seu conteúdo em forma de string */
-    static function render(string $ref, string|array $data = [], ...$params): string
+    static function render(string $ref, string|array $data = [], array $params = []): string
     {
         self::$SCHEME = self::$SCHEME ?? self::scheme();
         $ref = self::resolveViewRef($ref);
