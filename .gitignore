@@ -1,0 +1,10 @@
+/mx
+/.conf
+/composer.lock
+
+# MX CORE
+
+/.env
+/vendor
+/library/cache
+/library/certificate

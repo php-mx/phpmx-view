@@ -9,6 +9,16 @@
         }
     ],
     "minimum-stability": "dev",
-    "autoload": {},
-    "require": {}
+    "autoload": {
+        "psr-4": {
+            "": "class/"
+        },
+        "files": [
+            "system/helper/script/path.php",
+            "system/helper/script/view.php"
+        ]
+    },
+    "require": {
+        "phpmx/core": "dev-main"
+    }
 }
