@@ -1,6 +1,6 @@
 {
     "name": "phpmx/view",
-    "description": "Renderizador da camada de visualização do PHPMX",
+    "description": "Renderizador da camada de visualização do phpMX",
     "license": "MIT",
     "authors": [
         {
@@ -8,16 +8,7 @@
             "email": "contatoadmx@gmail.com"
         }
     ],
-    "autoload": {
-        "psr-4": {
-            "": "source/"
-        },
-        "files": [
-            "helper/script/path.php",
-            "helper/script/view.php"
-        ]
-    },
-    "require": {
-        "phpmx/core": "^1.1"
-    }
+    "minimum-stability": "dev",
+    "autoload": {},
+    "require": {}
 }
