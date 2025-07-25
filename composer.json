@@ -1,6 +1,6 @@
 {
     "name": "phpmx/view",
-    "description": "Renderizador da camada de visualização do phpMX",
+    "description": "Renderizador da camada de visualização do PHPMX",
     "license": "MIT",
     "authors": [
         {
