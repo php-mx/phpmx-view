@@ -22,10 +22,10 @@ abstract class View
     protected static array $MEDIA_STYLE = [];
 
     static array $RENDER_CLASS = [
-        'php' => RenderHtml::class,
-        'html' => RenderHtml::class,
-        'css' => RenderCss::class,
-        'js' => RenderJs::class,
+        'php' => [RenderHtml::class, true],
+        'html' => [RenderHtml::class, true],
+        'css' => [RenderCss::class, true],
+        'js' => [RenderJs::class, true],
     ];
 
     /** Renderiza uma view e retorna seu conteúdo em forma de string */
@@ -105,7 +105,7 @@ abstract class View
     {
         $type = File::getEx(self::__currentGet('type') ?? '');
 
-        $class = self::$RENDER_CLASS[$type];
+        $class = self::$RENDER_CLASS[$type][0];
 
         if (!$class) return null;
         if (!class_exists($class)) return null;
@@ -121,7 +121,7 @@ abstract class View
         $content = str_replace('__scope', "_$__scope", $content);
 
         $type = File::getEx(self::__currentGet('importing_file') ?? '');
-        $class = self::$RENDER_CLASS[$type];
+        $class = self::$RENDER_CLASS[$type][0];
 
         if (!$class) return null;
         if (!class_exists($class)) return null;
@@ -142,9 +142,11 @@ abstract class View
         $current['data'] = [...self::__currentGet('data') ?? [], ...$data];
 
         if ($importOnly) {
-            $current['imports'] = array_filter($current['imports'], fn($v) => File::getEx($v) == $importOnly);
+            $current['imports'] = array_filter($scheme['imports'], fn($v) => File::getEx($v) == $importOnly);
             if (!count($current['imports']))
                 return false;
+        } else {
+            $current['imports'] = array_filter($scheme['imports'], fn($v) => self::$RENDER_CLASS[File::getEx($v)][1]);
         }
 
         self::$CURRENT[$scope] = $current;
