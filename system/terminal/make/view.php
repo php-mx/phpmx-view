@@ -10,7 +10,7 @@ return new class extends Terminal {
     function __invoke($view, $types = null)
     {
         $view = explode('/', $view);
-        $view = array_map(fn($v) => strToCamelCase($v), $view);
+        $view = array_map(fn($v) => str_replace(' ', '_', remove_accents($v)), $view);
         $view = path('system/view', ...$view);
 
         if ($types) {
