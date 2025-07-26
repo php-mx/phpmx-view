@@ -9,13 +9,14 @@ return new class extends Terminal {
 
     function __invoke($view, $types = null)
     {
-        $view = strToCamelCase($view);
-        $view = path("system/view", $view);
+        $view = explode('/', $view);
+        $view = array_map(fn($v) => strToCamelCase($v), $view);
+        $view = path('system/view', ...$view);
 
         if ($types) {
-            $types = strtolower($types);
             $types = explode(',', $types);
-            $types = array_map(fn($type) => trim($type), $types);
+            $types = array_map(fn($type) => trim(strtolower($type)), $types);
+            $types = array_values($types);
             foreach ($types as $type)
                 $this->createViewFile("$view.$type", "library/template/terminal/view/$type.txt");
         } else {
