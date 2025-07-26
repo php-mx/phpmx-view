@@ -1,0 +1,3 @@
+<div id="__scope">
+    <!-- code here -->
+</div>
