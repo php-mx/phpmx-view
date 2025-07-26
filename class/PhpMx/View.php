@@ -138,15 +138,14 @@ abstract class View
 
         $current = [];
         $current['scope'] = $scope;
-        $current['imports'] = $scheme['imports'];
         $current['data'] = [...self::__currentGet('data') ?? [], ...$data];
 
-        if ($importOnly) {
+        if (!$importOnly) {
+            $current['imports'] = array_filter($scheme['imports'], fn($v) => self::$RENDER_CLASS[File::getEx($v)][1]);
+        } else {
             $current['imports'] = array_filter($scheme['imports'], fn($v) => File::getEx($v) == $importOnly);
             if (!count($current['imports']))
                 return false;
-        } else {
-            $current['imports'] = array_filter($scheme['imports'], fn($v) => self::$RENDER_CLASS[File::getEx($v)][1]);
         }
 
         self::$CURRENT[$scope] = $current;
