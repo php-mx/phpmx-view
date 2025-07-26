@@ -215,7 +215,7 @@ abstract class View
         return cache('view-scheme', function () {
             $scheme = [];
 
-            foreach (Path::seekForDirs('system/view') as $viewPath) {
+            foreach (array_reverse(Path::seekForDirs('system/view')) as $viewPath) {
                 $viewFiles = Dir::seekForFile($viewPath, true);
 
                 foreach ($viewFiles as $viewFile) {
