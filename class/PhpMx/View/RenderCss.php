@@ -62,6 +62,8 @@ abstract class RenderCss extends View
                 } else {
                     $content[] = "$currentSelector {\n$scopeContent\n}\n";
                 }
+            } elseif (str_starts_with($scopeSelector, '@keyframes')) {
+                $content[] = "$scopeSelector {\n$scopeContent\n}\n";
             } elseif (str_starts_with($scopeSelector, '@')) {
                 $scopeContent = self::unnesting($scopeContent, $currentSelector);
                 $content[] = "$scopeSelector {\n$scopeContent\n}\n";
