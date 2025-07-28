@@ -1,6 +1,7 @@
 <?php
 
 use PhpMx\Dir;
+use PhpMx\File;
 use PhpMx\Path;
 use PhpMx\Terminal;
 
@@ -18,7 +19,7 @@ return new class extends Terminal {
             self::echoLine();
 
             foreach ($this->getFilesIn($path, $origin) as $file) {
-                self::echo(' - [#ref] ([#file])[#status]', $file);
+                self::echo(' - [#alias] ([#types])[#status]', $file);
             };
 
             self::echo();
@@ -42,14 +43,23 @@ return new class extends Terminal {
         $files = [];
         foreach (Dir::seekForFile($path, true) as $ref) {
             $file = path($path, $ref);
-            $this->used[$ref] = $this->used[$ref] ?? $origin;
 
-            $files[$ref] = [
-                'ref' => $ref,
-                'file' => $file,
-                'status' => $this->used[$ref] == $origin ? '' : ' [replaced in ' . $this->used[$ref] . ']'
+            $type = File::getEx($file);
+            $alias = substr($ref, 0, (strlen($type) + 1) * -1);
+
+            $this->used[$alias] = $this->used[$alias] ?? $origin;
+
+            $files[$alias] = $files[$alias] ?? [
+                'alias' => $alias,
+                'types' => [],
+                'status' => $this->used[$alias] == $origin ? '' : ' [replaced in ' . $this->used[$alias] . ']'
             ];
+            $files[$alias]['types'][] = $type;
         }
+
+        foreach ($files as &$file)
+            $file['types'] = implode(', ', $file['types']);
+
         ksort($files);
         return $files;
     }
