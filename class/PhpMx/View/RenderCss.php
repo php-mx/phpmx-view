@@ -4,6 +4,7 @@ namespace PhpMx\View;
 
 use PhpMx\View;
 
+/** Classe responsável por renderizar e formatar arquivos CSS em views. */
 abstract class RenderCss extends View
 {
     protected static array $IMPORTED_HASH = [];

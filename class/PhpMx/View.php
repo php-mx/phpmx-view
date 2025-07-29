@@ -9,6 +9,7 @@ use PhpMx\View\RenderCss;
 use PhpMx\View\RenderHtml;
 use PhpMx\View\RenderJs;
 
+/** Classe responsável por renderizar views e aplicar lógica de apresentação. */
 abstract class View
 {
     protected static int $SCOPE = 0;

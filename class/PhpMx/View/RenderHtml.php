@@ -4,6 +4,7 @@ namespace PhpMx\View;
 
 use PhpMx\View;
 
+/** Classe responsável por renderizar e formatar arquivos HTML em views. */
 abstract class RenderHtml extends View
 {
     protected static array $PREPARE_REPLACE = [

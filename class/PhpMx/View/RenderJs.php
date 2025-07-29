@@ -4,6 +4,7 @@ namespace PhpMx\View;
 
 use PhpMx\View;
 
+/** Classe responsável por renderizar e formatar arquivos JavaScript em views. */
 abstract class RenderJs extends View
 {
     protected static array $IMPORTED_HASH = [];
