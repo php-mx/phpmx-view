@@ -26,11 +26,13 @@ abstract class RenderHtml extends View
             '#<pre(.*?)>(.*?)</pre>#is',
             function ($matches) use (&$preserved) {
                 $key = '@@MINIFY_BLOCK_' . count($preserved) . '@@';
+                $matches[2] = htmlspecialchars($matches[2], ENT_NOQUOTES | ENT_SUBSTITUTE, 'UTF-8');
                 $preserved[$key] = "<pre{$matches[1]}>{$matches[2]}</pre>";
                 return $key;
             },
             $content
         );
+
 
         preg_match('/<html[^>]*>(.*?)<\/html>/s', $content, $html);
         $content = count($html) ? self::formatPage($content) : self::formatFragment($content);
