@@ -11,7 +11,6 @@ abstract class RenderHtml extends View
         '] -->' => ']',
     ];
 
-    /** Aplica ações extras ao renderizar uma view */
     protected static function renderizeAction(string $content): string
     {
         $content = str_replace(array_keys(self::$PREPARE_REPLACE), array_values(self::$PREPARE_REPLACE), $content);
@@ -19,22 +18,28 @@ abstract class RenderHtml extends View
         return trim($content);
     }
 
-    /** Formata um conteúdo HTML mantendo quebras de linha */
     protected static function format(string $content): string
     {
+        $preserved = [];
+
+        $content = preg_replace_callback(
+            '#<pre(.*?)>(.*?)</pre>#is',
+            function ($matches) use (&$preserved) {
+                $key = '@@MINIFY_BLOCK_' . count($preserved) . '@@';
+                $preserved[$key] = "<pre{$matches[1]}>{$matches[2]}</pre>";
+                return $key;
+            },
+            $content
+        );
+
         preg_match('/<html[^>]*>(.*?)<\/html>/s', $content, $html);
         $content = count($html) ? self::formatPage($content) : self::formatFragment($content);
-
-        $preserved = [];
 
         $content = preg_replace_callback(
             '#<(script|style)(.*?)>(.*?)</\1>#is',
             function ($matches) use (&$preserved) {
                 $key = '@@MINIFY_BLOCK_' . count($preserved) . '@@';
-                $type = strtolower($matches[1]);
-                $raw = $matches[3];
-
-                $preserved[$key] = "<{$type}{$matches[2]}>{$raw}</{$type}>";
+                $preserved[$key] = "<{$matches[1]}{$matches[2]}>{$matches[3]}</{$matches[1]}>";
                 return $key;
             },
             $content
@@ -50,6 +55,7 @@ abstract class RenderHtml extends View
 
         return trim(strtr($content, $preserved));
     }
+
 
     protected static function formatFragment(string $content): string
     {
