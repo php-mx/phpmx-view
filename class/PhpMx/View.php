@@ -217,39 +217,34 @@ abstract class View
         return cache('view-scheme', function () {
             $scheme = [];
 
-            foreach (array_reverse(Path::seekForDirs('system/view')) as $viewPath) {
-                $viewFiles = Dir::seekForFile($viewPath, true);
+            foreach (Path::seekForDirs('system/view') as $viewPath) {
+                foreach (Dir::seekForFile($viewPath, true) as $viewFile) {
+                    $fileEx = File::getEx($viewFile);
 
-                foreach ($viewFiles as $viewFile) {
-
-                    if (isset(self::$RENDER_CLASS[File::getEx($viewFile)])) {
+                    if (isset(self::$RENDER_CLASS[$fileEx])) {
                         $path = Dir::getOnly($viewFile);
                         $file = File::getOnly($viewFile);
-                        $name = File::getName($file);
-                        $ex = File::getEx($file);
-                        $alias = path($path, $name);
+                        $fileName = File::getName($file);
+                        $namespace = str_starts_with($file, '_') ? $path : path($path, $fileName);
                         $import = path($viewPath, $viewFile);
+                        $scope = md5($namespace);
 
-                        if (!isset($scheme[$alias]) || $scheme[$alias]['origin'] != $viewPath) {
-                            $scheme[$alias]  = [
-                                'scope' => md5($alias),
+                        if (!isset($scheme[$namespace]) || $scheme[$namespace]['origin'] == $viewPath) {
+                            $scheme[$namespace] = $scheme[$namespace] ?? [
+                                'scope' => $scope,
                                 'origin' => $viewPath,
-                                'imports' => [
-                                    'php' => null,
-                                    'html' => null,
-                                ]
+                                'imports' => []
                             ];
+                            $scheme[$namespace]['imports'][] = $import;
                         }
-
-                        $scheme[$alias]['imports'][$ex] = $import;
                     }
                 }
+            }
 
-                foreach ($scheme as &$item) {
-                    $item['imports'] = array_filter($item['imports']);
-                    $item['imports'] = array_values($item['imports']);
-                    unset($item['origin']);
-                }
+            foreach ($scheme as &$item) {
+                $item['imports'] = array_filter($item['imports']);
+                $item['imports'] = array_values($item['imports']);
+                unset($item['origin']);
             }
 
             return $scheme;
