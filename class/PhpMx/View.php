@@ -39,7 +39,7 @@ abstract class View
         $importOnly = null;
 
         foreach (array_keys(self::$RENDER_CLASS) as $ex) {
-            if (!$importOnly && str_ends_with($ref, $ex)) {
+            if (!$importOnly && str_ends_with($ref, ".$ex")) {
                 $importOnly = $ex;
                 $ref = substr($ref, 0, -strlen($ex) - 1);
             }
