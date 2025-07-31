@@ -15,21 +15,6 @@ return new class extends Terminal {
         if ($ex)
             $view = substr($view, 0, -strlen($ex) - 1);
 
-        if ($ex == 'content') {
-            $ex = 'html';
-            $view = path($view, '_content');
-        }
-
-        if ($ex == 'style') {
-            $ex = 'css';
-            $view = path($view, '_style');
-        }
-
-        if ($ex == 'script') {
-            $ex = 'js';
-            $view = path($view, '_script');
-        }
-
         if ($ex && !isset(View::$RENDER_CLASS[$ex]))
             throw new Exception("View type [$ex] not supported");
 
@@ -40,9 +25,9 @@ return new class extends Terminal {
         if ($ex) {
             $this->createViewFile("$view.$ex", "library/template/terminal/view/$ex.txt");
         } else {
-            $this->createViewFile(path($view, "_content.html"), "library/template/terminal/view/html.txt");
-            $this->createViewFile(path($view, "_style.css"), "library/template/terminal/view/css.txt");
-            $this->createViewFile(path($view, "_script.js"), "library/template/terminal/view/js.txt");
+            $this->createViewFile("$view.html", "library/template/terminal/view/html.txt");
+            $this->createViewFile("$view.css", "library/template/terminal/view/css.txt");
+            $this->createViewFile("$view.js", "library/template/terminal/view/js.txt");
         }
     }
 
