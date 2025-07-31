@@ -19,7 +19,7 @@ return new class extends Terminal {
             self::echoLine();
 
             foreach ($this->getFilesIn($path, $origin) as $file) {
-                self::echo(' - [#alias] ([#types])[#status]', $file);
+                self::echo(' - [#namespace] ([#imports])[#status]', $file);
             };
 
             self::echo();
@@ -38,29 +38,67 @@ return new class extends Terminal {
         return 'unknown';
     }
 
-    protected function getFilesIn($path, $origin)
+    protected function getFilesIn($viewPath, $originName)
     {
-        $files = [];
-        foreach (Dir::seekForFile($path, true) as $ref) {
-            $file = path($path, $ref);
+        $scheme = [];
 
-            $type = File::getEx($file);
-            $alias = substr($ref, 0, (strlen($type) + 1) * -1);
+        foreach (Dir::seekForFile($viewPath, true) as $viewFile) {
+            $path = Dir::getOnly($viewFile);
+            $file = File::getOnly($viewFile);
+            $fileEx = File::getEx($viewFile);
+            $fileName = File::getName($file);
 
-            $this->used[$alias] = $this->used[$alias] ?? $origin;
+            $namespace = path($path, $fileName);
 
-            $files[$alias] = $files[$alias] ?? [
-                'alias' => $alias,
-                'types' => [],
-                'status' => $this->used[$alias] == $origin ? '' : ' [replaced in ' . $this->used[$alias] . ']'
+            $this->used[$namespace] = $this->used[$namespace] ?? $originName;
+
+            $scheme[$namespace] = $scheme[$namespace] ?? [
+                'namespace' => $namespace,
+                'imports' => ['php' => null, 'html' => null],
+                'direct' => true,
+                'status' => $this->used[$namespace] == $originName ? '' : ' [replaced in ' . $this->used[$namespace] . ']'
             ];
-            $files[$alias]['types'][] = $type;
+
+            if (!$scheme[$namespace]['direct']) {
+                $scheme[$namespace]['direct'] = true;
+                $scheme[$namespace]['imports'] = ['php' => null, 'html' => null];
+            }
+
+            $scheme[$namespace]['imports'][$fileEx] = true;
+
+            $pathName = explode('/', $path);
+            $pathName = array_pop($pathName);
+
+            if ($pathName == $fileName) {
+
+                $namespace = path($path);
+
+                $this->used[$namespace] = $this->used[$namespace] ?? $originName;
+
+                $scheme[$namespace] = $scheme[$namespace] ?? [
+                    'namespace' => $namespace,
+                    'imports' => ['php' => null, 'html' => null],
+                    'direct' => false,
+                    'status' => $this->used[$namespace] == $originName ? '' : ' [replaced in ' . $this->used[$namespace] . ']'
+                ];
+
+
+                if (!$scheme[$namespace]['direct'])
+                    $scheme[$namespace]['imports'][$fileEx] = true;
+            }
         }
 
-        foreach ($files as &$file)
-            $file['types'] = implode(', ', $file['types']);
+        foreach ($scheme as &$item) {
+            $item['imports'] = array_filter($item['imports']);
+            $item['imports'] = array_keys($item['imports']);
+            unset($item['direct']);
+        }
 
-        ksort($files);
-        return $files;
+        foreach ($scheme as &$file)
+            $file['imports'] = implode(', ', $file['imports']);
+
+        ksort($scheme);
+
+        return $scheme;
     }
 };
