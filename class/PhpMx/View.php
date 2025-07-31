@@ -218,24 +218,55 @@ abstract class View
             $scheme = [];
 
             foreach (Path::seekForDirs('system/view') as $viewPath) {
+
                 foreach (Dir::seekForFile($viewPath, true) as $viewFile) {
+
                     $fileEx = File::getEx($viewFile);
 
                     if (isset(self::$RENDER_CLASS[$fileEx])) {
                         $path = Dir::getOnly($viewFile);
                         $file = File::getOnly($viewFile);
                         $fileName = File::getName($file);
-                        $namespace = str_starts_with($file, '_') ? $path : path($path, $fileName);
                         $import = path($viewPath, $viewFile);
+
+                        $namespace = path($path, $fileName);
                         $scope = md5($namespace);
 
                         if (!isset($scheme[$namespace]) || $scheme[$namespace]['origin'] == $viewPath) {
                             $scheme[$namespace] = $scheme[$namespace] ?? [
                                 'scope' => $scope,
                                 'origin' => $viewPath,
-                                'imports' => []
+                                'direct' => true,
+                                'imports' => ['php' => null, 'html' => null]
                             ];
-                            $scheme[$namespace]['imports'][] = $import;
+
+                            if (!$scheme[$namespace]['direct']) {
+                                $scheme[$namespace]['direct'] = true;
+                                $scheme[$namespace]['imports'] = ['php' => null, 'html' => null];
+                            }
+
+                            $scheme[$namespace]['imports'][$fileEx] = $import;
+                        }
+
+                        $pathName = explode('/', $path);
+                        $pathName = array_pop($pathName);
+
+                        if ($pathName == $fileName) {
+
+                            $namespace = path($path);
+                            $scope = md5($namespace);
+
+                            if (!isset($scheme[$namespace]) || $scheme[$namespace]['origin'] == $viewPath) {
+                                $scheme[$namespace] = $scheme[$namespace] ?? [
+                                    'scope' => $scope,
+                                    'origin' => $viewPath,
+                                    'direct' => false,
+                                    'imports' => ['php' => null, 'html' => null]
+                                ];
+
+                                if (!$scheme[$namespace]['direct'])
+                                    $scheme[$namespace]['imports'][$fileEx] = $import;
+                            }
                         }
                     }
                 }
@@ -245,6 +276,7 @@ abstract class View
                 $item['imports'] = array_filter($item['imports']);
                 $item['imports'] = array_values($item['imports']);
                 unset($item['origin']);
+                unset($item['direct']);
             }
 
             return $scheme;
