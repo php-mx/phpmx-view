@@ -47,7 +47,7 @@ abstract class View
 
         $scheme = self::$SCHEME[$ref] ?? false;
 
-        if ($scheme && self::__currentOpen($scheme, $data, $importOnly)) {
+        if ($scheme && self::__currentOpen($ref, $scheme, $data, $importOnly)) {
 
             if (isset($params['scope'])) self::__currentSet('scope', $params['scope']);
 
@@ -131,13 +131,14 @@ abstract class View
     }
 
     /** Inicializa uma view */
-    protected static function __currentOpen(array $scheme, array $data = [], ?string $importOnly = null)
+    protected static function __currentOpen(string $call, array $scheme, array $data = [], ?string $importOnly = null)
     {
         $scope = mx5([self::$SCOPE, $scheme['scope']]);
 
         if (isset(self::$CURRENT[$scope])) return false;
 
         $current = [];
+        $current['call'] = $call;
         $current['scope'] = $scope;
         $current['data'] = [...self::__currentGet('data') ?? [], ...$data];
 
@@ -286,26 +287,22 @@ abstract class View
     /** Resolve a referencia de uma view */
     protected static function resolveViewRef($ref): string
     {
-        $parentFile = self::__currentGet('importing_file');
+        $currentCall = self::__currentGet('call');
 
-        if ($parentFile) {
-            $path = explode('view/', $parentFile);
-            array_shift($path);
-            $path = implode('view/', $path);
-            $path = Dir::getOnly($path);
+        if ($currentCall) {
             if (str_starts_with($ref, '.../')) {
-                $path = explode("/", $path);
-                array_pop($path);
-                array_pop($path);
-                $path = path(...$path);
-                $ref = path($path, substr($ref, 4));
+                $call = explode("/", $currentCall);
+                array_pop($call);
+                array_pop($call);
+                $call = path(...$call);
+                $ref = path($call, substr($ref, 4));
             } elseif (str_starts_with($ref, '../')) {
-                $path = explode("/", $path);
-                array_pop($path);
-                $path = path(...$path);
-                $ref = path($path, substr($ref, 3));
+                $call = explode("/", $currentCall);
+                array_pop($call);
+                $call = path(...$call);
+                $ref = path($call, substr($ref, 3));
             } elseif (str_starts_with($ref, './')) {
-                $ref = path($path, substr($ref, 2));
+                $ref = path($currentCall, substr($ref, 2));
             }
         }
 
