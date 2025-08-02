@@ -15,6 +15,8 @@ return new class extends Terminal {
         if ($ex)
             $view = substr($view, 0, -strlen($ex) - 1);
 
+        $ex = $ex ?? 'html';
+
         if ($ex && !isset(View::$RENDER_CLASS[$ex]))
             throw new Exception("View type [$ex] not supported");
 
@@ -22,19 +24,12 @@ return new class extends Terminal {
         $view = array_map(fn($v) => str_replace(' ', '_', remove_accents(trim($v))), $view);
         $view = path('system/view', ...$view);
 
-        if ($ex) {
-            $this->createViewFile("$view.$ex", "library/template/terminal/view/$ex.txt");
-        } else {
-            $this->createViewFile("$view.html", "library/template/terminal/view/html.txt");
-            $this->createViewFile("$view.css", "library/template/terminal/view/css.txt");
-            $this->createViewFile("$view.js", "library/template/terminal/view/js.txt");
-        }
-    }
+        $file = "$view.$ex";
 
-    protected function createViewFile($file, $template)
-    {
         if (File::check($file))
             return self::echo("[ignored] file [$file] already exists");
+
+        $template = "library/template/terminal/view/$ex.txt";
 
         $content = Path::seekForFile($template);
 
