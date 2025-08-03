@@ -24,7 +24,7 @@ abstract class RenderHtml extends View
         $preserved = [];
 
         $content = preg_replace_callback(
-            '#<pre(.*?)>(.*?)</pre>#is',
+            '#<pre(.*?)>(.*?)</pre(.*?)>#is',
             function ($matches) use (&$preserved) {
                 $key = '@@MINIFY_BLOCK_' . count($preserved) . '@@';
                 $matches[2] = htmlspecialchars($matches[2], ENT_NOQUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -33,7 +33,6 @@ abstract class RenderHtml extends View
             },
             $content
         );
-
 
         preg_match('/<html[^>]*>(.*?)<\/html>/s', $content, $html);
         $content = count($html) ? self::formatPage($content) : self::formatFragment($content);
@@ -56,7 +55,9 @@ abstract class RenderHtml extends View
         $content = preg_replace("/\n{2,}/", "\n", $content);
         $content = preg_replace('/^\s+/m', '', $content);
 
-        return trim(strtr($content, $preserved));
+        $content = trim(strtr($content, $preserved));
+
+        return $content;
     }
 
 
