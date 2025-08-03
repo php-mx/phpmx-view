@@ -52,7 +52,7 @@ abstract class RenderHtml extends View
 
         $content = preg_replace('/(>)(?=<)/', "$1\n", $content);
         $content = preg_replace('/</', "\n<", $content);
-        $content = preg_replace('/>\s*/', ">\n", $content);
+        $content = preg_replace('/>(?=\s*<\w)/', ">\n", $content);
         $content = preg_replace("/\n{2,}/", "\n", $content);
         $content = preg_replace('/^\s+/m', '', $content);
 
