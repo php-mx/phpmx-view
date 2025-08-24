@@ -287,22 +287,26 @@ abstract class View
     /** Resolve a referencia de uma view */
     protected static function resolveViewRef($ref): string
     {
-        $currentCall = self::__currentGet('call');
+        $currentFile = self::__currentGet('importing_file');
 
-        if ($currentCall) {
+        if ($currentFile) {
+            $currentFile = Dir::getOnly($currentFile);
+            $currentFile = explode('/', $currentFile);
+            array_shift($currentFile);
+            array_shift($currentFile);
+
             if (str_starts_with($ref, '.../')) {
-                $call = explode("/", $currentCall);
-                array_pop($call);
-                array_pop($call);
-                $call = path(...$call);
+                array_pop($currentFile);
+                array_pop($currentFile);
+                $call = path(...$currentFile);
                 $ref = path($call, substr($ref, 4));
             } elseif (str_starts_with($ref, '../')) {
-                $call = explode("/", $currentCall);
-                array_pop($call);
-                $call = path(...$call);
+                array_pop($currentFile);
+                $call = path(...$currentFile);
                 $ref = path($call, substr($ref, 3));
             } elseif (str_starts_with($ref, './')) {
-                $ref = path($currentCall, substr($ref, 2));
+                $call = path(...$currentFile);
+                $ref = path($call, substr($ref, 2));
             }
         }
 
