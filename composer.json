@@ -2,6 +2,7 @@
     "name": "phpmx/view",
     "description": "Renderizador da camada de visualização do PHPMX",
     "license": "MIT",
+    "minimum-stability": "dev",
     "authors": [
         {
             "name": "André Ricardo",
@@ -18,6 +19,6 @@
         ]
     },
     "require": {
-        "phpmx/core": "^2.0"
+        "phpmx/core": "dev-main"
     }
 }

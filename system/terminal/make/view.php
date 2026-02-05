@@ -6,7 +6,8 @@ use PhpMx\Path;
 use PhpMx\Terminal;
 use PhpMx\View;
 
-return new class extends Terminal {
+/** Cria um novo arquivo de view em system/view */
+return new class {
 
     function __invoke($view)
     {
@@ -27,19 +28,19 @@ return new class extends Terminal {
         $file = "$view.$ex";
 
         if (File::check($file))
-            return self::echo("[ignored] file [$file] already exists");
+            return Terminal::echol("[#c:wd,ignored] [#c:dd,file] [#c:pd,$file] [#c:dd,already exists]");
 
         $template = "library/template/terminal/view/$ex.txt";
 
         $content = Path::seekForFile($template);
 
         if (!$content)
-            return self::echo("[ignored] template [$template] not found");
+            return Terminal::echol("[#c:wd,ignored] [#c:dd,template] [#c:pd,$template] [#c:dd,not found]");
 
         if ($content) {
             $content = Import::content($content);
             File::create($file, $content);
-            self::echo("[created] file [$file] created");
+            Terminal::echol("File [#c:p,#] created successfully", $file);
         }
     }
 };

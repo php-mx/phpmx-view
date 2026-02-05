@@ -2,43 +2,23 @@
 
 use PhpMx\Dir;
 use PhpMx\File;
-use PhpMx\Path;
-use PhpMx\Terminal;
+use PhpMx\Trait\TerminalHelperTrait;
 
-return new class extends Terminal {
+/** Lista e detalha todas as views disponíveis no projeto */
+return new class {
 
-    protected $used = [];
+    use TerminalHelperTrait;
 
-    function __invoke()
+    function __invoke($filter = null)
     {
-        foreach (Path::seekForDirs('system/view') as $path) {
-            $origin = $this->getOrigim($path);
-
-            self::echo();
-            self::echo('[[#]]', $origin);
-            self::echoLine();
-
-            foreach ($this->getFilesIn($path, $origin) as $file) {
-                self::echo(' - [#namespace] ([#imports])[#status]', $file);
-            };
-
-            self::echo();
-        }
+        $this->handle(
+            'system/view',
+            $filter,
+            ' - [#c:p,#ref] [#c:dd,#description]'
+        );
     }
 
-    protected function getOrigim($path)
-    {
-        if ($path === 'system/view') return 'CURRENT-PROJECT';
-
-        if (str_starts_with($path, 'vendor/')) {
-            $parts = explode('/', $path);
-            return $parts[1] . '-' . $parts[2];
-        }
-
-        return 'unknown';
-    }
-
-    protected function getFilesIn($viewPath, $originName)
+    protected function scan($viewPath)
     {
         $scheme = [];
 
@@ -50,13 +30,10 @@ return new class extends Terminal {
 
             $namespace = path($path, $fileName);
 
-            $this->used[$namespace] = $this->used[$namespace] ?? $originName;
-
             $scheme[$namespace] = $scheme[$namespace] ?? [
-                'namespace' => $namespace,
+                'ref' => $namespace,
                 'imports' => ['php' => null, 'html' => null],
                 'direct' => true,
-                'status' => $this->used[$namespace] == $originName ? '' : ' [replaced in ' . $this->used[$namespace] . ']'
             ];
 
             if (!$scheme[$namespace]['direct']) {
@@ -73,13 +50,10 @@ return new class extends Terminal {
 
                 $namespace = path($path);
 
-                $this->used[$namespace] = $this->used[$namespace] ?? $originName;
-
                 $scheme[$namespace] = $scheme[$namespace] ?? [
-                    'namespace' => $namespace,
+                    'ref' => $namespace,
                     'imports' => ['php' => null, 'html' => null],
                     'direct' => false,
-                    'status' => $this->used[$namespace] == $originName ? '' : ' [replaced in ' . $this->used[$namespace] . ']'
                 ];
 
 
@@ -94,10 +68,9 @@ return new class extends Terminal {
             unset($item['direct']);
         }
 
-        foreach ($scheme as &$file)
-            $file['imports'] = implode(', ', $file['imports']);
-
-        ksort($scheme);
+        foreach ($scheme as &$file) {
+            $file['description'] = "[" . implode(', ', $file['imports']) . "]";
+        }
 
         return $scheme;
     }
