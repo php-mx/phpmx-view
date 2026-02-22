@@ -1,3 +1,0 @@
-#__scope {
-    /* style here */
-}

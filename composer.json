@@ -11,11 +11,10 @@
     ],
     "autoload": {
         "psr-4": {
-            "": "class/"
+            "": "source/"
         },
         "files": [
-            "system/helper/script/path.php",
-            "system/helper/script/view.php"
+            "system/helper/script/path.php"
         ]
     },
     "require": {

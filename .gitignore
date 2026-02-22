@@ -2,9 +2,10 @@
 /.conf
 /composer.lock
 
-# MX CORE
+# MX-CORE
 
 /.env
 /vendor
-/library/cache
-/library/certificate
+/.vscode
+/storage/cache
+/storage/certificate
