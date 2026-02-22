@@ -14,7 +14,8 @@
             "": "source/"
         },
         "files": [
-            "system/helper/script/path.php"
+            "system/helper/script/path.php",
+            "system/helper/script/view.php"
         ]
     },
     "require": {

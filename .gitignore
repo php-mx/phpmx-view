@@ -2,8 +2,11 @@
 /.conf
 /composer.lock
 
+/system/view
+
 # MX-CORE
 
+/.env
 /vendor
 /.vscode
 /storage/cache

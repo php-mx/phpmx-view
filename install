@@ -1,0 +1,13 @@
+<?php
+
+use PhpMx\Trait\TerminalInstallTrait;
+
+return new class {
+
+    use TerminalInstallTrait;
+
+    function __invoke()
+    {
+        $this->createDir('system/view');
+    }
+};
