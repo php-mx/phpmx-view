@@ -4,7 +4,6 @@
 
 # MX-CORE
 
-/.env
 /vendor
 /.vscode
 /storage/cache
