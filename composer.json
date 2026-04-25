@@ -14,13 +14,13 @@
             "": "source/"
         },
         "files": [
+            "system/helper/function/htmlToInlineCss.php",
             "system/helper/function/mdToHtml.php",
             "system/helper/script/path.php",
             "system/helper/script/view.php"
         ]
     },
     "require": {
-        "phpmx/core": "dev-main",
-        "phpmx/server": "dev-main"
+        "phpmx/core": "dev-main"
     }
 }
