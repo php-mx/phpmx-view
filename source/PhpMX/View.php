@@ -144,8 +144,9 @@ abstract class View
 
         $content = str_replace('__scope', "_$__scope", $content);
 
-        $type = File::getEx(self::__currentGet('importing_file') ?? '');
-        $class = self::$RENDER_CLASS[$type][0];
+        $fileType = File::getEx(self::__currentGet('importing_file') ?? '');
+        $type = ($fileType === 'php') ? (self::__currentGet('type') ?? $fileType) : $fileType;
+        $class = self::$RENDER_CLASS[$type][0] ?? null;
 
         if (!$class) return null;
         if (!class_exists($class)) return null;
@@ -335,12 +336,17 @@ abstract class View
             if (!is_numeric($__KEY__))
                 $$__KEY__ = $__DATA[$__KEY__];
 
+        $__TYPE = null;
+
         ob_start();
         $__RETURN__ = require $__FILEPATH__;
         $__OUTPUT__ = ob_get_clean();
 
         if (is_stringable($__RETURN__) && !is_numeric($__RETURN__))
             $__OUTPUT__ = $__RETURN__;
+
+        if ($__TYPE && isset(self::$RENDER_CLASS[$__TYPE]))
+            self::__currentSet('type', $__TYPE);
 
         return [$__OUTPUT__, $__DATA];
     }
