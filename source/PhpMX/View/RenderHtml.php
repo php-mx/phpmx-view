@@ -27,8 +27,13 @@ abstract class RenderHtml extends View
             '#<pre(.*?)>(.*?)</pre(.*?)>#is',
             function ($matches) use (&$preserved) {
                 $key = '@@MINIFY_BLOCK_' . count($preserved) . '@@';
-                $matches[2] = htmlspecialchars($matches[2], ENT_NOQUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                $preserved[$key] = "<pre{$matches[1]}>{$matches[2]}</pre>";
+                $inner = $matches[2];
+                if (preg_match('#^\s*<code([^>]*)>(.*)</code>\s*$#is', $inner, $code)) {
+                    $escaped = htmlspecialchars($code[2], ENT_NOQUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                    $preserved[$key] = "<pre{$matches[1]}><code{$code[1]}>$escaped</code></pre>";
+                } else {
+                    $preserved[$key] = "<pre{$matches[1]}>" . htmlspecialchars($inner, ENT_NOQUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</pre>";
+                }
                 return $key;
             },
             $content

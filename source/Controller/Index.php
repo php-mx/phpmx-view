@@ -11,7 +11,7 @@ class Index
     /** */
     function __invoke()
     {
-        // Response::type('md');
+        Response::type('md');
 
         Response::content(View::render('teste.md'));
 
