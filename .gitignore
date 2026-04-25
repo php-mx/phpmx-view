@@ -8,6 +8,8 @@
 
 /.env
 /vendor
+/.claude
 /.vscode
+/CLAUDE.md
 /storage/cache
 /storage/certificate

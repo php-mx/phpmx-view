@@ -19,6 +19,7 @@
         ]
     },
     "require": {
-        "phpmx/core": "dev-main"
+        "phpmx/core": "dev-main",
+        "phpmx/server": "dev-main"
     }
 }

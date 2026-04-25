@@ -8,6 +8,7 @@ use PhpMx\Import;
 use PhpMx\View\RenderCss;
 use PhpMx\View\RenderHtml;
 use PhpMx\View\RenderJs;
+use PhpMx\View\RenderMd;
 
 /**
  * Classe responsável por renderizar views e aplicar lógica de apresentação.
@@ -31,6 +32,7 @@ abstract class View
         'html' => [RenderHtml::class, true],
         'css' => [RenderCss::class, true],
         'js' => [RenderJs::class, true],
+        'md' => [RenderMd::class, false],
     ];
 
     /**
